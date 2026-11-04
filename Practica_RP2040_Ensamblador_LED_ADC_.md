@@ -110,6 +110,65 @@ pico_add_extra_outputs(lectura_adc_asm)
 
 Utiliza el mismo nombre de ejecutable, `lectura_adc_asm`, en las demás opciones que haya generado la extensión. Si pide volver a configurar CMake, acepta.
 
+## Código CMakeLists.txt Completo:
+```c
+# Version minima de CMake.
+cmake_minimum_required(VERSION 3.13)
+
+# Si la extension genero un bloque de configuracion
+# de Pico para VS Code, conservarlo aqui.
+
+# Tarjeta utilizada en la practica.
+set(PICO_BOARD waveshare_rp2040_zero CACHE STRING "Board")
+
+# Importar el SDK antes de declarar el proyecto.
+include(pico_sdk_import.cmake)
+
+# Nombre del proyecto y lenguajes habilitados.
+# ASM permite compilar el archivo programa.S.
+project(lectura_adc_asm C CXX ASM)
+
+# Estandares de los lenguajes.
+set(CMAKE_C_STANDARD 11)
+set(CMAKE_CXX_STANDARD 17)
+
+# Inicializar el SDK de Raspberry Pi Pico.
+pico_sdk_init()
+
+# Archivos que forman el programa.
+add_executable(lectura_adc_asm
+    lectura_adc_asm.c
+    programa.S
+)
+
+# Nombre y version del programa.
+pico_set_program_name(lectura_adc_asm "lectura_adc_asm")
+pico_set_program_version(lectura_adc_asm "1.0")
+
+# Permitir encabezados ubicados en la carpeta del proyecto.
+target_include_directories(lectura_adc_asm PRIVATE
+    ${CMAKE_CURRENT_LIST_DIR}
+)
+
+# Bibliotecas necesarias:
+# pico_stdlib: funciones generales, USB y temporizacion.
+# hardware_adc: convertidor analogico a digital.
+target_link_libraries(lectura_adc_asm
+    pico_stdlib
+    hardware_adc
+)
+
+# Mostrar printf por USB.
+pico_enable_stdio_usb(lectura_adc_asm 1)
+
+# Deshabilitar la salida estandar por UART.
+pico_enable_stdio_uart(lectura_adc_asm 0)
+
+# Generar el archivo UF2 para cargarlo en la tarjeta.
+pico_add_extra_outputs(lectura_adc_asm)
+
+```
+
 ## 6. Escribir el archivo C de apoyo
 
 Pega este código completo en **`lectura_adc_asm.c`**:
