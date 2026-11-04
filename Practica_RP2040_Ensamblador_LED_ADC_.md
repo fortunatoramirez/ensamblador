@@ -96,17 +96,18 @@ set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 # Configuracion de la extension Raspberry Pi Pico para VS Code.
+# USERHOME es requerido por pico-vscode.cmake: conservar este nombre.
 if(WIN32)
-    set(PICO_USER_HOME "$ENV{USERPROFILE}")
+    set(USERHOME "$ENV{USERPROFILE}")
 else()
-    set(PICO_USER_HOME "$ENV{HOME}")
+    set(USERHOME "$ENV{HOME}")
 endif()
 
 set(sdkVersion 2.3.1)
 set(toolchainVersion 15_2_Rel1)
 set(picotoolVersion 2.3.1)
 
-set(picoVscode "${PICO_USER_HOME}/.pico-sdk/cmake/pico-vscode.cmake")
+set(picoVscode "${USERHOME}/.pico-sdk/cmake/pico-vscode.cmake")
 if(EXISTS "${picoVscode}")
     include("${picoVscode}")
 endif()
@@ -452,6 +453,7 @@ Debes poder explicar el recorrido del dato: **potenciómetro → ADC → r0 → 
 | CMake no encuentra `lectura_adc_asm.c` u `programa.S` | Revisar nombres exactos, extensión S mayúscula y ubicación junto a CMakeLists.txt. |
 | No encuentra `pico_sdk_import.cmake` | Copiar el archivo real desde `external` del SDK al proyecto. |
 | SDK, compilador o picotool no encontrados | Revisar versiones instaladas y el bloque de la extensión; volver a configurar tras limpiar build. |
+| Ruta del SDK comienza con `/.pico-sdk/` sin la carpeta del usuario | Conservar la variable `USERHOME` del bloque de la extensión, guardar y regenerar build. |
 | Clean CMake falla | Seguir la recuperación de la sección 5 y revisar el primer error de la salida. |
 | No aparece RPI-RP2 | Cable de datos y BOOT presionado antes de conectar. |
 | `undefined reference to programa_asm` | `programa.S` incluido en `add_executable`, nombre correcto y directiva `.global`. |
