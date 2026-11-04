@@ -64,114 +64,116 @@ Al girar la perilla, el cursor entrega una fracción del voltaje de alimentació
 
 1. Abre la extensión **Raspberry Pi Pico** en VS Code.
 2. Selecciona **New C/C++ Project**.
-3. Usa el nombre **`lectura_adc_asm`**.
+3. Usa el nombre **`P01_Ensamblador`**.
 4. Selecciona **`waveshare_rp2040_zero`**. Si no aparece, utiliza **`pico`** como alternativa para este ejercicio.
 5. **No selecciones Pico 2**, porque corresponde a otro microcontrolador.
 6. Selecciona lenguaje **C** y habilita la salida estándar por **USB**.
 7. Crea el proyecto con las herramientas que ya utilizaste en las prácticas anteriores.
-8. El archivo C principal deberá llamarse **`lectura_adc_asm.c`**. Si tiene otro nombre, renómbralo.
-9. Crea en la misma carpeta el archivo **`programa.S`**, con **S mayúscula**.
+8. El archivo C principal deberá llamarse **`main.c`**. Si tiene otro nombre, renómbralo.
+9. Crea en la misma carpeta el archivo **`operaciones.S`**, con **S mayúscula**.
 
-### Configurar CMakeLists.txt
+### Configurar CMakeLists.txt completo
 
-Conserva las líneas de configuración del SDK generadas por la extensión. Ajusta las secciones siguientes, sin duplicarlas.
+Usaremos estos nombres en toda la práctica:
 
-Habilita ensamblador en la declaración del proyecto:
+| Elemento | Nombre |
+|---|---|
+| Proyecto y ejecutable | `P01_Ensamblador` |
+| Archivo C | `main.c` |
+| Archivo ensamblador | `operaciones.S` |
+| Función llamada desde C | `programa_asm` |
+| Archivo para cargar | `P01_Ensamblador.uf2` |
+
+El nombre de la función no tiene que coincidir con el nombre del archivo ensamblador. Conserva un solo archivo C con `main()` y una sola definición de `programa_asm`.
+
+Reemplaza el contenido de `CMakeLists.txt` por este bloque completo. Las versiones indicadas corresponden al entorno utilizado en clase. Si tu proyecto recién generado tiene otras versiones instaladas, conserva sus valores de `sdkVersion`, `toolchainVersion` y `picotoolVersion`; no basta con escribir una versión para instalarla.
 
 ```cmake
-project(lectura_adc_asm C CXX ASM)
-```
+cmake_minimum_required(VERSION 3.13)
 
-Incluye ambos archivos en el ejecutable:
+set(CMAKE_C_STANDARD 11)
+set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
-```cmake
-add_executable(lectura_adc_asm
-    lectura_adc_asm.c
-    programa.S
+# Configuracion de la extension Raspberry Pi Pico para VS Code.
+if(WIN32)
+    set(PICO_USER_HOME "$ENV{USERPROFILE}")
+else()
+    set(PICO_USER_HOME "$ENV{HOME}")
+endif()
+
+set(sdkVersion 2.3.1)
+set(toolchainVersion 15_2_Rel1)
+set(picotoolVersion 2.3.1)
+
+set(picoVscode "${PICO_USER_HOME}/.pico-sdk/cmake/pico-vscode.cmake")
+if(EXISTS "${picoVscode}")
+    include("${picoVscode}")
+endif()
+
+# Seleccionar RP2040-Zero antes de importar el SDK.
+set(PICO_BOARD waveshare_rp2040_zero CACHE STRING "Board type")
+
+# Archivo generado/copiado al crear el proyecto con la extension.
+include(pico_sdk_import.cmake)
+
+project(P01_Ensamblador C CXX ASM)
+
+pico_sdk_init()
+
+add_executable(P01_Ensamblador
+    main.c
+    operaciones.S
 )
-```
 
-Incluye las bibliotecas:
+pico_set_program_name(P01_Ensamblador "P01_Ensamblador")
+pico_set_program_version(P01_Ensamblador "1.0")
 
-```cmake
-target_link_libraries(lectura_adc_asm
+target_link_libraries(P01_Ensamblador
     pico_stdlib
     hardware_adc
 )
-```
 
-Comprueba estas opciones:
-
-```cmake
-pico_enable_stdio_usb(lectura_adc_asm 1)
-pico_enable_stdio_uart(lectura_adc_asm 0)
-pico_add_extra_outputs(lectura_adc_asm)
-```
-
-Utiliza el mismo nombre de ejecutable, `lectura_adc_asm`, en las demás opciones que haya generado la extensión. Si pide volver a configurar CMake, acepta.
-
-## Código CMakeLists.txt Completo:
-```c
-# Version minima de CMake.
-cmake_minimum_required(VERSION 3.13)
-
-# Si la extension genero un bloque de configuracion
-# de Pico para VS Code, conservarlo aqui.
-
-# Tarjeta utilizada en la practica.
-set(PICO_BOARD waveshare_rp2040_zero CACHE STRING "Board")
-
-# Importar el SDK antes de declarar el proyecto.
-include(pico_sdk_import.cmake)
-
-# Nombre del proyecto y lenguajes habilitados.
-# ASM permite compilar el archivo programa.S.
-project(lectura_adc_asm C CXX ASM)
-
-# Estandares de los lenguajes.
-set(CMAKE_C_STANDARD 11)
-set(CMAKE_CXX_STANDARD 17)
-
-# Inicializar el SDK de Raspberry Pi Pico.
-pico_sdk_init()
-
-# Archivos que forman el programa.
-add_executable(lectura_adc_asm
-    lectura_adc_asm.c
-    programa.S
-)
-
-# Nombre y version del programa.
-pico_set_program_name(lectura_adc_asm "lectura_adc_asm")
-pico_set_program_version(lectura_adc_asm "1.0")
-
-# Permitir encabezados ubicados en la carpeta del proyecto.
-target_include_directories(lectura_adc_asm PRIVATE
+target_include_directories(P01_Ensamblador PRIVATE
     ${CMAKE_CURRENT_LIST_DIR}
 )
 
-# Bibliotecas necesarias:
-# pico_stdlib: funciones generales, USB y temporizacion.
-# hardware_adc: convertidor analogico a digital.
-target_link_libraries(lectura_adc_asm
-    pico_stdlib
-    hardware_adc
-)
+pico_enable_stdio_usb(P01_Ensamblador 1)
+pico_enable_stdio_uart(P01_Ensamblador 0)
 
-# Mostrar printf por USB.
-pico_enable_stdio_usb(lectura_adc_asm 1)
-
-# Deshabilitar la salida estandar por UART.
-pico_enable_stdio_uart(lectura_adc_asm 0)
-
-# Generar el archivo UF2 para cargarlo en la tarjeta.
-pico_add_extra_outputs(lectura_adc_asm)
-
+pico_add_extra_outputs(P01_Ensamblador)
 ```
+
+**Antes de compilar:**
+
+1. Abre en VS Code la carpeta raíz del proyecto, donde está `CMakeLists.txt`.
+2. Comprueba que esa carpeta también contiene `main.c`, `operaciones.S` y `pico_sdk_import.cmake`.
+3. Conserva la carpeta `.vscode` generada por la extensión y sus opciones de herramientas.
+4. Si no tienes `pico_sdk_import.cmake`, cópialo desde la carpeta `external` del SDK instalado a la carpeta del proyecto. No crees un archivo vacío con ese nombre.
+5. Guarda el código usando el botón de copiar de cada bloque. No pegues las marcas de Markdown, `&#x20;` ni barras `\` al final de cada línea. El `\n` dentro de `printf` sí forma parte del código.
+
+`hardware_adc` permite compilar y enlazar las funciones del convertidor. `ASM` habilita el archivo ensamblador. La configuración de la extensión localiza las herramientas instaladas; si no se utiliza esa integración, el entorno debe proporcionar la ruta `PICO_SDK_PATH` y el compilador ARM.
+
+### Si estás reutilizando el proyecto anterior
+
+Si ya tienes el proyecto `P01_Ensamblador` con `main.c` y `operaciones.S`, utiliza esos mismos archivos y reemplaza su contenido por los códigos de las secciones 6 y 7. No agregues otra copia con los nombres de ejemplos anteriores.
+
+### Si falla Clean CMake
+
+**Clean CMake no comprueba las conexiones de la tarjeta.** El primer diagnóstico debe hacerse en la salida de configuración o compilación.
+
+1. Guarda los archivos y detén cualquier compilación en curso.
+2. Si la limpieza falla, cierra VS Code y elimina únicamente la carpeta generada `build` dentro de este proyecto. Conserva los fuentes, `.vscode` y `pico_sdk_import.cmake`.
+3. Abre otra vez la carpeta del proyecto en VS Code y deja que la extensión vuelva a configurar CMake. Si no inicia automáticamente, utiliza su opción de configurar o compilar.
+4. Comprueba que la tarjeta seleccionada sea RP2040-Zero y que las versiones de herramientas estén instaladas.
+5. Ejecuta **Build/Compile**. Para compilar no necesitas que la tarjeta esté conectada.
+6. Si falla de nuevo, copia desde la **primera línea de error** de la salida de CMake hasta su explicación. El mensaje genérico de que la tarea terminó con error no identifica la causa.
+
+Eliminar `build` también descarta la selección de placa y las rutas guardadas en caché. Es necesario regenerarla si antes se usó Pico 2 o se movió la carpeta del proyecto.
 
 ## 6. Escribir el archivo C de apoyo
 
-Pega este código completo en **`lectura_adc_asm.c`**:
+Pega este código completo en **`main.c`**:
 
 ```c
 #include <stdio.h>
@@ -179,7 +181,7 @@ Pega este código completo en **`lectura_adc_asm.c`**:
 #include "pico/stdlib.h"
 #include "hardware/adc.h"
 
-// Funcion escrita en programa.S.
+// Funcion escrita en operaciones.S.
 extern void programa_asm(void);
 
 void preparar_adc(void)
@@ -228,7 +230,7 @@ La práctica usa **ensamblador con apoyo del SDK en C**. La conversión la reali
 
 ## 7. Escribir el código ensamblador
 
-Pega este código completo en **`programa.S`**:
+Pega este código completo en **`operaciones.S`**:
 
 ```asm
 .syntax unified
@@ -378,13 +380,13 @@ Las líneas que empiezan con punto son instrucciones para el **ensamblador**, no
 
 ## 9. Compilar y cargar
 
-1. Guarda `lectura_adc_asm.c`, `programa.S` y `CMakeLists.txt`.
+1. Guarda `main.c`, `operaciones.S` y `CMakeLists.txt`.
 2. Ejecuta **Build/Compile** desde la extensión Pico.
 3. Corrige cualquier error antes de continuar.
 4. Desconecta la tarjeta.
 5. Mantén presionado **BOOT** y conecta el cable USB.
 6. Suelta BOOT cuando aparezca la unidad **RPI-RP2**.
-7. Copia a esa unidad el archivo **`lectura_adc_asm.uf2`**, normalmente dentro de `build`.
+7. Copia a esa unidad el archivo **`P01_Ensamblador.uf2`**, normalmente dentro de `build`.
 8. La unidad desaparecerá y el programa comenzará a ejecutarse.
 
 ## 10. Observar las lecturas
@@ -436,7 +438,7 @@ Se imprime continuamente, por lo que puedes abrir el monitor después de que el 
 
 ## 13. Entrega
 
-- Archivos `lectura_adc_asm.c`, `programa.S` y `CMakeLists.txt`.
+- Archivos `main.c`, `operaciones.S` y `CMakeLists.txt`.
 - Fotografía de las conexiones del potenciómetro.
 - Captura o video donde se observe el cambio de lectura al girar la perilla.
 - Tabla de mediciones completa y respuestas a las preguntas.
@@ -447,8 +449,12 @@ Debes poder explicar el recorrido del dato: **potenciómetro → ADC → r0 → 
 
 | Problema | Qué revisar |
 |---|---|
+| CMake no encuentra `main.c` u `operaciones.S` | Revisar nombres exactos, extensión S mayúscula y ubicación junto a CMakeLists.txt. |
+| No encuentra `pico_sdk_import.cmake` | Copiar el archivo real desde `external` del SDK al proyecto. |
+| SDK, compilador o picotool no encontrados | Revisar versiones instaladas y el bloque de la extensión; volver a configurar tras limpiar build. |
+| Clean CMake falla | Seguir la recuperación de la sección 5 y revisar el primer error de la salida. |
 | No aparece RPI-RP2 | Cable de datos y BOOT presionado antes de conectar. |
-| `undefined reference to programa_asm` | `programa.S` incluido en `add_executable`, nombre correcto y directiva `.global`. |
+| `undefined reference to programa_asm` | `operaciones.S` incluido en `add_executable`, nombre correcto y directiva `.global`. |
 | Error al enlazar ADC | Biblioteca `hardware_adc` incluida en CMake. |
 | Error de instrucciones | Proyecto para RP2040, Cortex-M0+ y lenguaje ASM habilitado. |
 | No aparece texto | Salida USB habilitada, COM correcto y ningún otro programa ocupando el puerto. |
