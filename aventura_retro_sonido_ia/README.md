@@ -1,4 +1,4 @@
-# Tu aventura retro, ahora con sonido e IA
+# Agregando sonido al Sistema Retro
 
 Continuación de [Aventura retro con IA](../aventura_retro_ia). Trabaja sobre **tu juego personalizado de la práctica anterior**: conservaremos personajes, animación y reglas, y agregaremos sonido a sus eventos.
 
